@@ -1,57 +1,640 @@
-# Advanced Load Balancer Server
 
-A feature-rich load balancer with multiple algorithms, sticky sessions, and path-based routing.
+
+# Advanced Node.js Load Balancer
+
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/yourusername/advanced-nodejs-load-balancer/graphs/commit-activity)
+
+A production-grade HTTP load balancer built with Node.js featuring multiple balancing algorithms, sticky sessions, path-based routing, and real-time monitoring dashboard.
+
+[Features](#features) • [Demo](#demo) • [Installation](#installation) • [Usage](#usage) • [Configuration](#configuration) • [Documentation](#documentation)
+
+---
+
+## Table of Contents
+
+- [Features](#features)
+- [Demo](#demo)
+- [Architecture](#architecture)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [Load Balancing Algorithms](#load-balancing-algorithms)
+- [Advanced Features](#advanced-features)
+- [API Documentation](#api-documentation)
+- [Monitoring Dashboard](#monitoring-dashboard)
+- [Testing](#testing)
+- [Project Structure](#project-structure)
+- [Tech Stack](#tech-stack)
+- [Contributing](#contributing)
+- [License](#license)
+- [Roadmap](#roadmap)
 
 ## Features
 
-- **Multiple Load Balancing Algorithms:** Choose from various strategies to distribute traffic.
-- **Sticky Sessions:** Ensures a client is consistently routed to the same server.
-- **Path-Based Routing:** Directs traffic to different backend services based on the URL path.
-- **Health Checks:** Automatically monitors the health of backend servers and removes unhealthy ones from the rotation.
-- **Dynamic Configuration:** Update the server list and settings without restarting the load balancer.
+### Core Functionality
+
+- **Multiple Load Balancing Algorithms**
+  - Round Robin
+  - Weighted Round Robin
+  - Least Connections
+  - Weighted Least Connections
+
+- **Health Checking**
+  - Automatic server health monitoring
+  - Configurable check intervals
+  - Automatic failover and recovery
+
+- **Sticky Sessions**
+  - Session persistence via cookies
+  - Consistent user routing
+  - Automatic session cleanup
+
+- **Path-Based Routing**
+  - Route requests based on URL patterns
+  - Support for wildcard matching
+  - Per-route server groups
+
+- **Real-Time Monitoring**
+  - WebSocket-based live dashboard
+  - Request/error tracking per server
+  - Visual server health status
+
+- **Configuration-Driven**
+  - JSON-based configuration
+  - No code changes required
+  - Hot-reloadable settings
+
+## Demo
+
+### Health Check & Auto-Recovery
+![Health Check](screenshots/health-check.png)
+
+### Real-Time Monitoring Dashboard
+![Dashboard](screenshots/dashboard.png)
+
+### Load Distribution in Action
+![Load Balancing](screenshots/load-balancing-demo.png)
+
+## Architecture
+
+```
+┌─────────────┐
+│   Client    │
+└──────┬──────┘
+       │
+       ▼
+┌──────────────────────────────────┐
+│     Load Balancer (Port 4000)    │
+│  ┌────────────────────────────┐  │
+│  │  Algorithm Selector        │  │
+│  │  - Round Robin             │  │
+│  │  - Weighted RR             │  │
+│  │  - Least Connections       │  │
+│  └────────────────────────────┘  │
+│  ┌────────────────────────────┐  │
+│  │  Session Manager           │  │
+│  │  (Sticky Sessions)         │  │
+│  └────────────────────────────┘  │
+│  ┌────────────────────────────┐  │
+│  │  Route Matcher             │  │
+│  │  (Path-Based Routing)      │  │
+│  └────────────────────────────┘  │
+│  ┌────────────────────────────┐  │
+│  │  Health Monitor (Cron)     │  │
+│  └────────────────────────────┘  │
+└──────────┬───────────────────────┘
+           │
+    ┌──────┴──────┬────────────┐
+    ▼             ▼            ▼
+┌────────┐   ┌────────┐   ┌────────┐
+│Server 1│   │Server 2│   │Server 3│
+└────────┘   └────────┘   └────────┘
+```
 
 ## Installation
 
-1.  Clone the repository:
-    ```bash
-    git clone <repository-url>
-    ```
-2.  Navigate to the project directory:
-    ```bash
-    cd advanced-loadbalancer-server
-    ```
-3.  Install the dependencies:
-    ```bash
-    npm install
-    ```
+### Prerequisites
 
-## Usage
+- **Node.js** >= 18.0.0
+- **npm** >= 9.0.0
+- Git
 
-To start the load balancer, run the following command:
+### Clone the Repository
 
 ```bash
-npm start
+git clone https://github.com/yourusername/advanced-nodejs-load-balancer.git
+cd advanced-nodejs-load-balancer
 ```
 
-The server will start and begin forwarding requests to the configured backend servers.
+### Install Dependencies
+
+```bash
+npm install
+```
+
+### Link CLI Command
+
+```bash
+npm link
+```
+
+## Quick Start
+
+### Step 1: Configure Your Servers
+
+Edit `config.json`:
+
+```json
+{
+  "port": 4000,
+  "algorithm": "round-robin",
+  "servers": [
+    { "url": "http://localhost:3001", "weight": 1 },
+    { "url": "http://localhost:3002", "weight": 2 }
+  ]
+}
+```
+
+### Step 2: Start Backend Servers
+
+```bash
+# Terminal 1
+node test-server-1.js
+
+# Terminal 2
+node test-server-2.js
+```
+
+### Step 3: Start Load Balancer
+
+```bash
+start-lb
+```
+
+### Step 4: Test It
+
+```bash
+curl http://localhost:4000/
+```
+
+Open monitoring dashboard: `http://localhost:4001`
 
 ## Configuration
 
-The load balancer's configuration is located in `config.json`. Here you can define:
+### Configuration File (`config.json`)
 
--   The load balancing strategy.
--   The list of backend servers.
--   Health check intervals and paths.
--   Path-based routing rules.
+```json
+{
+  "port": 4000,
+  "healthCheck": {
+    "endpoint": "/health",
+    "interval": 10
+  },
+  "algorithm": "round-robin",
+  "enableStickySession": false,
+  "servers": [
+    {
+      "url": "http://localhost:3001",
+      "weight": 1
+    },
+    {
+      "url": "http://localhost:3002",
+      "weight": 2
+    },
+    {
+      "url": "http://localhost:3003",
+      "weight": 1
+    }
+  ],
+  "routes": [
+    {
+      "path": "/api/*",
+      "servers": [0, 1]
+    },
+    {
+      "path": "/images/*",
+      "servers": [2]
+    },
+    {
+      "path": "/*",
+      "servers": [0, 1, 2]
+    }
+  ]
+}
+```
 
-## Dependencies
+### Configuration Options
 
--   [axios](https://www.npmjs.com/package/axios): Promise based HTTP client for the browser and node.js.
--   [cookie-parser](https://www.npmjs.com/package/cookie-parser): Parse Cookie header and populate `req.cookies`.
--   [express](https://www.npmjs.com/package/express): Fast, unopinionated, minimalist web framework for Node.js.
--   [node-cron](https://www.npmjs.com/package/node-cron): A simple cron-like job scheduler for Node.js.
--   [winston](https://www.npmjs.com/package/winston): A logger for just about everything.
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `port` | number | 4000 | Load balancer port |
+| `algorithm` | string | "round-robin" | Load balancing algorithm |
+| `enableStickySession` | boolean | false | Enable session persistence |
+| `healthCheck.endpoint` | string | "/health" | Health check URL path |
+| `healthCheck.interval` | number | 10 | Health check interval (seconds) |
+| `servers` | array | [] | Backend server configurations |
+| `servers[].url` | string | - | Server URL |
+| `servers[].weight` | number | 1 | Server weight (for weighted algorithms) |
+| `routes` | array | [] | Path-based routing rules |
+
+## Load Balancing Algorithms
+
+### Round Robin
+Distributes requests evenly across all healthy servers.
+
+```json
+{
+  "algorithm": "round-robin"
+}
+```
+
+**Use Case:** When all servers have equal capacity.
+
+### Weighted Round Robin
+Distributes requests based on server weights.
+
+```json
+{
+  "algorithm": "weighted-round-robin",
+  "servers": [
+    { "url": "http://localhost:3001", "weight": 1 },
+    { "url": "http://localhost:3002", "weight": 3 }
+  ]
+}
+```
+
+**Use Case:** When servers have different capacities (Server 2 gets 3x more requests).
+
+### Least Connections
+Routes to the server with the fewest active connections.
+
+```json
+{
+  "algorithm": "least-connections"
+}
+```
+
+**Use Case:** When request processing times vary significantly.
+
+### Weighted Least Connections
+Combines weights and connection counts.
+
+```json
+{
+  "algorithm": "weighted-least-connections"
+}
+```
+
+**Use Case:** Unequal server capacities + varying request durations.
+
+## Advanced Features
+
+### Sticky Sessions
+
+Enable session persistence to route users to the same server:
+
+```json
+{
+  "enableStickySession": true
+}
+```
+
+**How it works:**
+- First request: Load balancer assigns a server and sets a cookie
+- Subsequent requests: Cookie routes user to the same server
+- Cookie expires after 24 hours or when server becomes unhealthy
+
+**Testing Sticky Sessions:**
+
+```bash
+# First session
+curl -c cookies1.txt http://localhost:4000/
+curl -b cookies1.txt http://localhost:4000/  # Same server
+
+# New session
+curl -c cookies2.txt http://localhost:4000/  # Different server
+```
+
+### Path-Based Routing
+
+Route different URL patterns to specific server groups:
+
+```json
+{
+  "routes": [
+    {
+      "path": "/api/*",
+      "servers": [0, 1]
+    },
+    {
+      "path": "/images/*",
+      "servers": [2]
+    }
+  ]
+}
+```
+
+**Example:**
+- `GET /api/users` → Servers 0 or 1
+- `GET /images/logo.png` → Server 2 only
+- `GET /home` → All servers (default route)
+
+### Health Checking
+
+Automatic server health monitoring with configurable intervals:
+
+```json
+{
+  "healthCheck": {
+    "endpoint": "/health",
+    "interval": 5
+  }
+}
+```
+
+**Features:**
+- Automatic removal of unhealthy servers
+- Automatic re-addition when servers recover
+- Console logging of health status changes
+- Real-time dashboard updates
+
+## API Documentation
+
+### Load Balancer Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| ALL | `/*` | Proxies request to backend servers |
+| GET | `/favicon.ico` | Returns 204 No Content |
+
+### Monitoring API
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/` | Monitoring dashboard HTML |
+| GET | `/api/stats` | JSON stats (total requests, server health) |
+
+### Stats Response Format
+
+```json
+{
+  "totalRequests": 1250,
+  "healthyServers": ["http://localhost:3001", "http://localhost:3002"],
+  "deadServers": [],
+  "algorithm": "round-robin",
+  "uptime": 1699876543210,
+  "serverStats": {
+    "http://localhost:3001": {
+      "requests": 625,
+      "errors": 2
+    },
+    "http://localhost:3002": {
+      "requests": 625,
+      "errors": 0
+    }
+  }
+}
+```
+
+## Monitoring Dashboard
+
+Access the real-time monitoring dashboard at `http://localhost:4001`
+
+**Features:**
+- Total request count
+- Server health status (Healthy/Dead)
+- Per-server request statistics
+- Per-server error counts
+- Live updates via WebSocket
+- System uptime tracker
+
+![Monitoring Dashboard](screenshots/dashboard.png)
+
+**Dashboard Components:**
+
+| Component | Description |
+|-----------|-------------|
+| Total Requests | Cumulative request count across all servers |
+| Healthy Servers | Number of servers passing health checks |
+| Dead Servers | Number of servers failing health checks |
+| Algorithm | Currently active load balancing algorithm |
+| Server List | Individual server status with metrics |
+
+## Testing
+
+### Manual Testing
+
+```bash
+# Test basic load balancing
+for i in {1..10}; do curl http://localhost:4000/; done
+
+# Test sticky sessions
+curl -c cookies.txt http://localhost:4000/
+curl -b cookies.txt http://localhost:4000/
+
+# Test path-based routing
+curl http://localhost:4000/api/users
+curl http://localhost:4000/images/logo
+```
+
+### Load Testing with Apache Bench
+
+```bash
+# Install Apache Bench
+sudo apt-get install apache2-utils  # Ubuntu/Debian
+brew install ab                       # macOS
+
+# Run load test (1000 requests, 10 concurrent)
+ab -n 1000 -c 10 http://localhost:4000/
+```
+
+### Simulating Server Failure
+
+1. Stop one backend server (Ctrl+C)
+2. Watch health check detect failure (within 10 seconds)
+3. Make requests - they bypass the dead server
+4. Restart server - automatically re-added to pool
+
+### Test Different Algorithms
+
+Edit `config.json` and change the `algorithm` field:
+
+```bash
+# Test Round Robin
+"algorithm": "round-robin"
+
+# Test Weighted Round Robin
+"algorithm": "weighted-round-robin"
+
+# Test Least Connections
+"algorithm": "least-connections"
+
+# Test Weighted Least Connections
+"algorithm": "weighted-least-connections"
+```
+
+Restart the load balancer after each change.
+
+## Project Structure
+
+```
+advanced-nodejs-load-balancer/
+│
+├── bin/
+│   └── index.js              # CLI entry point
+│
+├── public/
+│   └── dashboard.html        # Monitoring dashboard UI
+│
+├── screenshots/              # Documentation images
+│   ├── dashboard.png
+│   ├── health-check.png
+│   ├── load-balancing-demo.png
+│   ├── folder-structure.png
+│   └── server-failure.png
+│
+├── algorithms.js             # Load balancing algorithms
+├── config.json               # Configuration file
+├── logServer.js              # Winston logger setup
+├── monitoringServer.js       # Dashboard backend + WebSocket
+├── routeMatcher.js           # Path-based routing logic
+├── server.js                 # Main load balancer server
+├── sessionManager.js         # Sticky session management
+│
+├── package.json              # Project metadata & dependencies
+├── package-lock.json         # Dependency lock file
+├── .gitignore               # Git ignore rules
+├── LICENSE                  # MIT License
+└── README.md                # This file
+```
+
+### Key Files Explained
+
+| File | Purpose | Lines of Code |
+|------|---------|---------------|
+| `server.js` | Main Express server, request handling, health checks | ~200 |
+| `algorithms.js` | Implementation of 4 load balancing algorithms | ~150 |
+| `sessionManager.js` | Cookie-based session persistence | ~80 |
+| `routeMatcher.js` | URL pattern matching for path-based routing | ~60 |
+| `monitoringServer.js` | Real-time dashboard with Socket.IO | ~120 |
+| `config.json` | All configurable settings | ~30 |
+
+## Tech Stack
+
+| Category | Technology |
+|----------|-----------|
+| **Runtime** | Node.js 18+ |
+| **Framework** | Express.js 4.18.2 |
+| **HTTP Client** | Axios 1.6.2 |
+| **Real-Time** | Socket.IO 4.6.0 |
+| **Scheduling** | node-cron 3.0.3 |
+| **Logging** | Winston 3.11.0 |
+| **CLI** | Chalk 5.3.0, Inquirer 9.2.12 |
+| **Tables** | cli-table3 0.6.3 |
+
+## Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Development Guidelines
+
+- Follow existing code style
+- Add tests for new features
+- Update documentation
+- Ensure health checks pass
+- Test all load balancing algorithms
 
 ## License
 
-This project is licensed under the ISC License.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Author
+
+**Your Name**
+- GitHub: [@yourusername](https://github.com/yourusername)
+- LinkedIn: [Your Name](https://linkedin.com/in/yourprofile)
+- Email: [your.email@example.com](mailto:your.email@example.com)
+- Portfolio: [yourportfolio.com](https://yourportfolio.com)
+
+## Acknowledgments
+
+- Inspired by production load balancers like NGINX and HAProxy
+- Built as a learning project for distributed systems and system design concepts
+- Special thanks to the Node.js and Express.js communities
+- WebSocket implementation inspired by real-time monitoring tools like Grafana
+
+## Roadmap
+
+### Phase 1 (Current)
+- [x] Multiple load balancing algorithms
+- [x] Health checking and auto-recovery
+- [x] Sticky sessions
+- [x] Path-based routing
+- [x] Real-time monitoring dashboard
+
+### Phase 2 (Planned)
+- [ ] SSL/TLS support (HTTPS)
+- [ ] Rate limiting per client IP
+- [ ] Request/response caching
+- [ ] WebSocket load balancing
+- [ ] Circuit breaker pattern
+
+### Phase 3 (Future)
+- [ ] Prometheus metrics export
+- [ ] Docker containerization
+- [ ] Kubernetes deployment configs
+- [ ] Database connection pooling
+- [ ] GraphQL support
+- [ ] gRPC load balancing
+
+## Known Issues
+
+- WebSocket connections don't support sticky sessions yet
+- Health check endpoint must return 2xx status code
+- Configuration changes require restart (no hot-reload yet)
+
+## Use Cases
+
+This load balancer is ideal for:
+
+- **Learning System Design:** Understand how production load balancers work
+- **Microservices Architecture:** Distribute traffic across multiple service instances
+- **API Gateway:** Route different API versions to different backend servers
+- **High Availability:** Automatic failover when servers go down
+- **Development Testing:** Test how your app behaves under load balancing
+
+## Additional Resources
+
+- [Load Balancing Algorithms Explained](https://www.nginx.com/blog/choosing-nginx-plus-load-balancing-techniques/)
+- [Sticky Sessions Best Practices](https://www.haproxy.com/blog/load-balancing-affinity-persistence-sticky-sessions-what-you-need-to-know/)
+- [System Design Interview Guide](https://github.com/donnemartin/system-design-primer)
+
+## Performance
+
+Tested on: MacBook Pro M1, 16GB RAM, Node.js v22.14.0
+
+| Metric | Value |
+|--------|-------|
+| Requests/sec | ~15,000 |
+| Latency (avg) | 2.5ms |
+| Memory usage | ~45MB |
+| CPU usage | ~8% |
+
+*Note: Performance varies based on backend server response times.*
+
+---
+
+**Star this repo if you find it helpful!**
+
+Made with ❤️ and Node.js
+
+[Report Bug](https://github.com/yourusername/advanced-nodejs-load-balancer/issues) · [Request Feature](https://github.com/yourusername/advanced-nodejs-load-balancer/issues)
