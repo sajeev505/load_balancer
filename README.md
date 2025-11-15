@@ -1,71 +1,57 @@
-# Load Balancer
+# Advanced Load Balancer Server
 
-A simple load balancer with cli implemented in Node.js and Express.
-
-Demo: https://youtu.be/yqBR1M1jlPA?si=EcGiI7i7gxPPoxkp
-
-## Description
-
-This project is a basic implementation of a load balancer using NodeJS and ExpressJS. The load balancer distributes incoming requests across multiple servers to ensure efficient utilization of resources and improved system reliability.
-
-![Screenshot 2023-12-23 214943](https://github.com/harshilsharmaa/Load-Balancer/assets/71216106/c91bdfca-7327-45a7-a5a4-d39f0330f81a)
-
+A feature-rich load balancer with multiple algorithms, sticky sessions, and path-based routing.
 
 ## Features
 
-- Distributes incoming requests across multiple servers.
-- Health checks to monitor server status.
-- Simple CLI configuration for setting up server details.
-- Logging of requests and errors for monitoring.
+- **Multiple Load Balancing Algorithms:** Choose from various strategies to distribute traffic.
+- **Sticky Sessions:** Ensures a client is consistently routed to the same server.
+- **Path-Based Routing:** Directs traffic to different backend services based on the URL path.
+- **Health Checks:** Automatically monitors the health of backend servers and removes unhealthy ones from the rotation.
+- **Dynamic Configuration:** Update the server list and settings without restarting the load balancer.
 
 ## Installation
 
-1. **Clone the repository:**
+1.  Clone the repository:
+    ```bash
+    git clone <repository-url>
+    ```
+2.  Navigate to the project directory:
+    ```bash
+    cd advanced-loadbalancer-server
+    ```
+3.  Install the dependencies:
+    ```bash
+    npm install
+    ```
 
-   ```bash
-   git clone https://github.com/your-username/load-balancer.git
-
-   
-2. **Install dependencies:**
-
-   ```bash
-   cd load-balancer
-   npm install
-
-   
 ## Usage
 
-1. **Configure the load balancer using the CLI:**
+To start the load balancer, run the following command:
 
-   ```bash
-   start-lb
+```bash
+npm start
+```
 
- The CLI tool prompts the user for essential details, including:
+The server will start and begin forwarding requests to the configured backend servers.
 
-- Number of servers
-- Server URLs
-- Health check endpoint
-- Health check period
-- This configuration ensures the load balancer has accurate information about available servers and their health.
+## Configuration
 
-   
-2. **Send requests to the load balancer and observe the distributed load among servers.**
+The load balancer's configuration is located in `config.json`. Here you can define:
 
-## Technical Details
+-   The load balancing strategy.
+-   The list of backend servers.
+-   Health check intervals and paths.
+-   Path-based routing rules.
 
-### Round-Robin Load Balancing
-The load balancer utilizes a round-robin algorithm to evenly distribute incoming requests among the available servers. This ensures each server gets an equal share of the load, preventing any single server from becoming a bottleneck.
+## Dependencies
 
-### Health Checks
-Periodic health checks are performed on each server to verify its availability. If a server fails a health check, it is temporarily removed from the rotation, preventing the load balancer from directing requests to an unhealthy server.
-
-### Logging
-The load balancer logs every incoming request and any encountered errors. This logging mechanism aids in monitoring and troubleshooting the system.
-
-## Contributing
-Contributions are welcome! Feel free to open issues or submit pull requests.
+-   [axios](https://www.npmjs.com/package/axios): Promise based HTTP client for the browser and node.js.
+-   [cookie-parser](https://www.npmjs.com/package/cookie-parser): Parse Cookie header and populate `req.cookies`.
+-   [express](https://www.npmjs.com/package/express): Fast, unopinionated, minimalist web framework for Node.js.
+-   [node-cron](https://www.npmjs.com/package/node-cron): A simple cron-like job scheduler for Node.js.
+-   [winston](https://www.npmjs.com/package/winston): A logger for just about everything.
 
 ## License
-This project is licensed under the MIT. License.
-Feel free to customize this further based on your specific implementation details and preferences.
 
+This project is licensed under the ISC License.

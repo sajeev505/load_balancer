@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Load Balancer Dashboard</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-primary: #0f172a;
+      --bg-secondary: #1e293b;
+      --bg-tertiary: #334155;
+      --text-primary: #f1f5f9;
+      --text-secondary: #cbd5e1;
+      --text-muted: #94a3b8;
+      --accent-primary: #3b82f6;
+      --accent-success: #10b981;
+      --accent-error: #ef4444;
+      --border-color: #334155;
+      --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --card-shadow-hover: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      padding: 0;
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .header {
+      margin-bottom: 2.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.02em;
+    }
+
+    .header-subtitle {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      font-weight: 400;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: var(--bg-secondary);
+      padding: 1.5rem;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--accent-primary);
+      transform: scaleX(0);
+      transition: transform 0.3s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent-primary);
+      box-shadow: var(--card-shadow-hover);
+    }
+
+    .stat-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .stat-label {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 0.75rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .stat-value {
+      font-size: 2.25rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+    }
+
+    .stat-value.algorithm {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--accent-primary);
+      text-transform: capitalize;
+    }
+
+    .servers-section {
+      background: var(--bg-secondary);
+      padding: 2rem;
+      border-radius: 12px;
+      border: 1px solid var(--border-color);
+      margin-bottom: 1.5rem;
+    }
+
+    .servers-section h2 {
+      margin-bottom: 1.5rem;
+      color: var(--text-primary);
+      font-size: 1.25rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    .server-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.25rem;
+      margin: 0.75rem 0;
+      background: var(--bg-tertiary);
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      transition: all 0.2s ease;
+    }
+
+    .server-item:hover {
+      background: var(--bg-secondary);
+      border-color: var(--accent-primary);
+    }
+
+    .server-item.dead {
+      opacity: 0.6;
+      border-left: 3px solid var(--accent-error);
+    }
+
+    .server-item:not(.dead) {
+      border-left: 3px solid var(--accent-success);
+    }
+
+    .server-url {
+      font-weight: 500;
+      color: var(--text-primary);
+      font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+      font-size: 0.9rem;
+    }
+
+    .server-metrics {
+      display: flex;
+      gap: 1.5rem;
+      align-items: center;
+    }
+
+    .metric {
+      text-align: center;
+      min-width: 60px;
+    }
+
+    .metric-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .metric-value {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .metric-value.error {
+      color: var(--accent-error);
+    }
+
+    .status-badge {
+      padding: 0.375rem 0.875rem;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      min-width: 80px;
+      text-align: center;
+    }
+
+    .status-healthy {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--accent-success);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+
+    .status-dead {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--accent-error);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .uptime {
+      text-align: center;
+      color: var(--text-muted);
+      margin-top: 2rem;
+      font-size: 0.875rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .uptime-value {
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 1rem;
+      }
+
+      .server-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+
+      .server-metrics {
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Load Balancer Dashboard</h1>
+      <p class="header-subtitle">Real-time monitoring and server status</p>
+    </div>
+    
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Requests</div>
+        <div class="stat-value" id="total-requests">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Healthy Servers</div>
+        <div class="stat-value" id="healthy-count">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Dead Servers</div>
+        <div class="stat-value" id="dead-count">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Algorithm</div>
+        <div class="stat-value algorithm" id="algorithm">-</div>
+      </div>
+    </div>
+
+    <div class="servers-section">
+      <h2>Server Status</h2>
+      <div id="servers-list"></div>
+    </div>
+
+    <div class="uptime">
+      Uptime: <span class="uptime-value" id="uptime">0s</span>
+    </div>
+  </div>
+
+  <script>
+    const socket = io();
+    let startTime = Date.now();
+
+    socket.on('stats-update', (stats) => {
+      updateDashboard(stats);
+    });
+
+    function updateDashboard(stats) {
+      document.getElementById('total-requests').textContent = stats.totalRequests || 0;
+      document.getElementById('healthy-count').textContent = stats.healthyServers.length;
+      document.getElementById('dead-count').textContent = stats.deadServers.length;
+      document.getElementById('algorithm').textContent = stats.algorithm || 'round-robin';
+
+      updateServersList(stats);
+    }
+
+    function updateServersList(stats) {
+      const serversList = document.getElementById('servers-list');
+      serversList.innerHTML = '';
+
+      const allServers = [...stats.healthyServers, ...stats.deadServers];
+      
+      allServers.forEach(serverUrl => {
+        const isHealthy = stats.healthyServers.includes(serverUrl);
+        const serverStats = stats.serverStats[serverUrl] || { requests: 0, errors: 0 };
+
+        const serverItem = document.createElement('div');
+        serverItem.className = `server-item ${isHealthy ? '' : 'dead'}`;
+        
+        serverItem.innerHTML = `
+          <div class="server-url">${serverUrl}</div>
+          <div class="server-metrics">
+            <div class="metric">
+              <div class="metric-label">Requests</div>
+              <div class="metric-value">${serverStats.requests}</div>
+            </div>
+            <div class="metric">
+              <div class="metric-label">Errors</div>
+              <div class="metric-value error">${serverStats.errors}</div>
+            </div>
+            <span class="status-badge ${isHealthy ? 'status-healthy' : 'status-dead'}">
+              ${isHealthy ? 'Healthy' : 'Dead'}
+            </span>
+          </div>
+        `;
+        
+        serversList.appendChild(serverItem);
+      });
+    }
+
+    // Update uptime every second
+    setInterval(() => {
+      const uptime = Math.floor((Date.now() - startTime) / 1000);
+      const hours = Math.floor(uptime / 3600);
+      const minutes = Math.floor((uptime % 3600) / 60);
+      const seconds = uptime % 60;
+      document.getElementById('uptime').textContent = 
+        `${hours}h ${minutes}m ${seconds}s`;
+    }, 1000);
+  </script>
+</body>
+</html>
